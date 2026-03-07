@@ -25,7 +25,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -320,7 +319,7 @@ export function Channels() {
                   <span className="text-3xl">{meta.icon}</span>
                   <p className="font-medium mt-2">{meta.name}</p>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {meta.description}
+                    {t(meta.description)}
                   </p>
                   {isConfigured && (
                     <Badge className="absolute top-2 right-2 text-xs bg-green-600 hover:bg-green-600">
@@ -440,7 +439,6 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
   const { t } = useTranslation('channels');
   const [configValues, setConfigValues] = useState<Record<string, string>>({});
   const [channelName, setChannelName] = useState('');
-  const [enabled, setEnabled] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -462,7 +460,6 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
       setConfigValues({});
       setChannelName('');
       setIsExistingConfig(false);
-      setEnabled(true);
       setChannelName('');
       setIsExistingConfig(false);
       // Ensure we clean up any pending QR session if switching away
@@ -475,45 +472,24 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
 
     (async () => {
       try {
-        const [result, configResult] = await Promise.all([
-          invokeIpc(
-            'channel:getFormValues',
-            selectedType
-          ) as Promise<{ success: boolean; values?: Record<string, string> }>,
-          invokeIpc(
-            'channel:getConfig',
-            selectedType
-          ) as Promise<{ success: boolean; config?: Record<string, unknown> }>,
-        ]);
+        const result = await invokeIpc(
+          'channel:getFormValues',
+          selectedType
+        ) as { success: boolean; values?: Record<string, string> };
 
         if (cancelled) return;
 
         if (result.success && result.values && Object.keys(result.values).length > 0) {
           setConfigValues(result.values);
-        } else {
-          setConfigValues({});
-        }
-
-        const existingConfig = configResult.success ? configResult.config : undefined;
-        if (existingConfig && typeof existingConfig.enabled === 'boolean') {
-          setEnabled(existingConfig.enabled);
-        } else {
-          setEnabled(true);
-        }
-
-        if (
-          (result.success && result.values && Object.keys(result.values).length > 0) ||
-          Boolean(existingConfig)
-        ) {
           setIsExistingConfig(true);
         } else {
+          setConfigValues({});
           setIsExistingConfig(false);
         }
       } catch {
         if (!cancelled) {
           setConfigValues({});
           setIsExistingConfig(false);
-          setEnabled(true);
         }
       } finally {
         if (!cancelled) setLoadingConfig(false);
@@ -547,7 +523,7 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
         const saveResult = await invokeIpc(
           'channel:saveConfig',
           'whatsapp',
-          { enabled }
+          { enabled: true }
         ) as { success?: boolean; error?: string };
         if (!saveResult?.success) {
           console.error('Failed to save WhatsApp config:', saveResult?.error);
@@ -581,7 +557,7 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
       // Cancel when unmounting or switching types
       invokeIpc('channel:cancelWhatsAppQr').catch(() => { });
     };
-  }, [selectedType, channelName, enabled, onChannelAdded, t]);
+  }, [selectedType, channelName, onChannelAdded, t]);
 
   const handleValidate = async () => {
     if (!selectedType) return;
@@ -690,7 +666,7 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
       }
 
       // Step 2: Save channel configuration via IPC
-      const config: Record<string, unknown> = { ...configValues, enabled };
+      const config: Record<string, unknown> = { ...configValues };
       const saveResult = await invokeIpc('channel:saveConfig', selectedType, config) as {
         success?: boolean;
         error?: string;
@@ -873,14 +849,6 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
                   value={channelName}
                   onChange={(e) => setChannelName(e.target.value)}
                 />
-              </div>
-
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <p className="text-sm font-medium">{t('dialog.enableChannel')}</p>
-                  <p className="text-xs text-muted-foreground">{t('dialog.enableChannelDesc')}</p>
-                </div>
-                <Switch checked={enabled} onCheckedChange={setEnabled} />
               </div>
 
               {/* Configuration fields */}
