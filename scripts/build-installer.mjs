@@ -134,11 +134,40 @@ async function resolveTauriCli() {
   const tauriCliPath = path.join(installerDir, 'node_modules', '.bin', tauriCliName);
 
   if (await exists(tauriCliPath)) {
-    return tauriCliPath;
+    return { kind: 'binary', path: tauriCliPath };
+  }
+
+  const tauriCliScript = path.join(installerDir, 'node_modules', '@tauri-apps', 'cli', 'tauri.js');
+  if (await exists(tauriCliScript)) {
+    return { kind: 'node', path: tauriCliScript };
+  }
+
+  const pnpmVirtualStoreDir = path.join(rootDir, 'node_modules', '.pnpm');
+  if (await exists(pnpmVirtualStoreDir)) {
+    const pnpmEntries = await fs.readdir(pnpmVirtualStoreDir);
+    const tauriCliPackageDir = pnpmEntries
+      .filter((entry) => entry.startsWith('@tauri-apps+cli@'))
+      .sort()
+      .at(-1);
+
+    if (tauriCliPackageDir) {
+      const tauriCliVirtualStoreScript = path.join(
+        pnpmVirtualStoreDir,
+        tauriCliPackageDir,
+        'node_modules',
+        '@tauri-apps',
+        'cli',
+        'tauri.js',
+      );
+
+      if (await exists(tauriCliVirtualStoreScript)) {
+        return { kind: 'node', path: tauriCliVirtualStoreScript };
+      }
+    }
   }
 
   throw new Error(
-    `Could not find the installer-local Tauri CLI at ${tauriCliPath}. Run "pnpm install --dir installer-tauri" before building the offline installer.`,
+    `Could not find the Tauri CLI for the offline installer. Checked ${tauriCliPath}, ${tauriCliScript}, and the pnpm virtual store under ${pnpmVirtualStoreDir}. Run "pnpm install --dir installer-tauri" before building the offline installer.`,
   );
 }
 
@@ -161,10 +190,16 @@ console.log(chalk.green(`Payload archive written to ${payloadZip} (${Math.round(
 
 console.log(chalk.yellow(`[4/4] Building Tauri setup wizard...`));
 const tauriTarget = tauriTargetMap[targetOs][targetArch];
-const tauriCliPath = await resolveTauriCli();
+const tauriCli = await resolveTauriCli();
 
 await $`rustup target add ${tauriTarget}`;
-await $`${tauriCliPath} build --target ${tauriTarget}`;
+console.log(chalk.green(`Using Tauri CLI from ${tauriCli.path}`));
+
+if (tauriCli.kind === 'binary') {
+  await $`${tauriCli.path} build --target ${tauriTarget}`;
+} else {
+  await $`${process.execPath} ${tauriCli.path} build --target ${tauriTarget}`;
+}
 
 console.log(chalk.green(`\nInstaller build completed successfully.`));
 console.log(`Bundle output: ${path.join(installerDir, 'src-tauri', 'target', tauriTarget, 'release', 'bundle')}`);
