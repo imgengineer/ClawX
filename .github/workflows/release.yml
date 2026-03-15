@@ -121,6 +121,9 @@ jobs:
 
   release-linux-installer-arm64:
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    env:
+      CI: 'true'
 
     steps:
       - name: Checkout code
@@ -150,11 +153,22 @@ jobs:
             ${{ runner.os }}-arm64-pnpm-store-
             ${{ runner.os }}-pnpm-store-
 
+      - name: Setup Electron cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-arm64-electron-${{ hashFiles('pnpm-lock.yaml', 'installer-tauri/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-arm64-electron-
+            ${{ runner.os }}-electron-
+
       - name: Install root dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile --reporter append-only
 
       - name: Install installer dependencies
-        run: pnpm install --dir installer-tauri
+        run: pnpm install --dir installer-tauri --reporter append-only
 
       - name: Install Linux bundle dependencies for Tauri
         run: |
