@@ -149,10 +149,8 @@ console.log(chalk.green(`Payload archive written to ${payloadZip} (${Math.round(
 console.log(chalk.yellow(`[4/4] Building Tauri setup wizard...`));
 const tauriTarget = tauriTargetMap[targetOs][targetArch];
 
-cd(installerDir);
 await $`rustup target add ${tauriTarget}`;
-await $`pnpm exec tauri build --target ${tauriTarget}`;
-cd(rootDir);
+await $`pnpm --dir ${installerDir} exec tauri build --target ${tauriTarget}`;
 
 console.log(chalk.green(`\nInstaller build completed successfully.`));
 console.log(`Bundle output: ${path.join(installerDir, 'src-tauri', 'target', tauriTarget, 'release', 'bundle')}`);
