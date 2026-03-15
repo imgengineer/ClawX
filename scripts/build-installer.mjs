@@ -129,6 +129,19 @@ async function zipDirectoryContents(sourceDir, destinationZip) {
   });
 }
 
+async function resolveTauriCli() {
+  const tauriCliName = process.platform === 'win32' ? 'tauri.cmd' : 'tauri';
+  const tauriCliPath = path.join(installerDir, 'node_modules', '.bin', tauriCliName);
+
+  if (await exists(tauriCliPath)) {
+    return tauriCliPath;
+  }
+
+  throw new Error(
+    `Could not find the installer-local Tauri CLI at ${tauriCliPath}. Run "pnpm install --dir installer-tauri" before building the offline installer.`,
+  );
+}
+
 console.log(chalk.blue(`[1/4] Starting installer build: os=${targetOs}, arch=${targetArch}`));
 
 console.log(chalk.yellow(`[2/4] Building unpacked Electron app...`));
@@ -148,9 +161,10 @@ console.log(chalk.green(`Payload archive written to ${payloadZip} (${Math.round(
 
 console.log(chalk.yellow(`[4/4] Building Tauri setup wizard...`));
 const tauriTarget = tauriTargetMap[targetOs][targetArch];
+const tauriCliPath = await resolveTauriCli();
 
 await $`rustup target add ${tauriTarget}`;
-await $`pnpm --dir ${installerDir} exec tauri build --target ${tauriTarget}`;
+await $`${tauriCliPath} build --target ${tauriTarget}`;
 
 console.log(chalk.green(`\nInstaller build completed successfully.`));
 console.log(`Bundle output: ${path.join(installerDir, 'src-tauri', 'target', tauriTarget, 'release', 'bundle')}`);
