@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+    font-family: "Avenir Next", "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+    --shell-bg: #eef2fb;
+    --shell-panel: rgba(246, 248, 253, 0.82);
+    --panel-strong: rgba(5, 20, 78, 0.96);
+    --panel-main: rgba(248, 249, 253, 0.94);
+    --card-soft: rgba(255, 255, 255, 0.56);
+    --card-active: rgba(255, 255, 255, 0.92);
+    --line-soft: rgba(2, 42, 153, 0.12);
+    --line-strong: rgba(2, 42, 153, 0.26);
+    --text-primary: #08133d;
+    --text-secondary: rgba(8, 19, 61, 0.76);
+    --text-muted: rgba(8, 19, 61, 0.48);
+    --accent-strong: #022A99;
+    --accent-soft: #FC8416;
+    --success-soft: #FC8416;
+    --danger-strong: #d35f2c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --shell-bg: #040b21;
+      --shell-panel: rgba(4, 10, 34, 0.88);
+      --panel-strong: rgba(2, 10, 40, 0.96);
+      --panel-main: rgba(7, 14, 42, 0.9);
+      --card-soft: rgba(255, 255, 255, 0.04);
+      --card-active: rgba(255, 255, 255, 0.09);
+      --line-soft: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --text-primary: #eef2ff;
+      --text-secondary: rgba(238, 242, 255, 0.78);
+      --text-muted: rgba(238, 242, 255, 0.46);
+      --accent-strong: #022A99;
+      --accent-soft: #FC8416;
+      --success-soft: #FC8416;
+      --danger-strong: #ff9a4d;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at top left, rgba(2, 42, 153, 0.16), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(252, 132, 22, 0.16), transparent 32%),
+      var(--shell-bg);
+    color: var(--text-primary);
+    overflow: hidden;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@keyframes installerPulse {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.92);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes installerShimmer {
+  0% {
+    transform: translateX(-180%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}

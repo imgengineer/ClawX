@@ -302,6 +302,7 @@ Chain multiple skills together to create sophisticated automation pipelines. Pro
 │   └── types/               # TypeScript type definitions
 ├── tests/
 │   └── unit/                # Vitest unit/integration-like tests
+├── installer-tauri/         # Offline setup wizard (Tauri + React)
 ├── resources/                # Static assets (icons/images)
 └── scripts/                  # Build and utility scripts
 ```
@@ -326,6 +327,8 @@ pnpm package              # Package for current platform
 pnpm package:mac          # Package for macOS
 pnpm package:win          # Package for Windows
 pnpm package:linux        # Package for Linux
+pnpm run build:installer -- --os=win --arch=x64   # Build offline setup wizard
+pnpm run build:installer -- --os=linux --arch=arm64  # Build Linux arm64 offline setup wizard (run on Linux host/CI)
 ```
 ### Tech Stack
 

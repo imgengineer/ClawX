@@ -1,4 +1,4 @@
-# ClawX Release Workflow
+# ClawMate Release Workflow
 # Builds and publishes releases for macOS, Windows, and Linux
 
 name: Release
@@ -87,21 +87,21 @@ jobs:
         run: |
           ulimit -n 65536
           echo "File descriptor limit: $(ulimit -n)"
-          pnpm run build:vite && pnpm exec zx scripts/bundle-openclaw.mjs && pnpm exec electron-builder --mac --publish never
+          pnpm run package:mac -- --publish never
 
       # Windows specific steps
       - name: Build Windows
         if: matrix.platform == 'win'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run build:vite && pnpm exec zx scripts/bundle-openclaw.mjs && pnpm exec electron-builder --win --publish never
+        run: pnpm run package:win -- --publish never
 
       # Linux specific steps
       - name: Build Linux
         if: matrix.platform == 'linux'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run build:vite && pnpm exec zx scripts/bundle-openclaw.mjs && pnpm exec electron-builder --linux --publish never
+        run: pnpm run package:linux -- --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -119,11 +119,85 @@ jobs:
             !release/builder-debug.yml
           retention-days: 7
 
+  release-linux-installer-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-arm64-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-arm64-pnpm-store-
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install root dependencies
+        run: pnpm install
+
+      - name: Install installer dependencies
+        run: pnpm install --dir installer-tauri
+
+      - name: Install Linux bundle dependencies for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            rpm
+
+      - name: Download uv binaries for Linux
+        run: pnpm run uv:download:linux
+
+      - name: Build Linux arm64 offline installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run build:installer -- --os=linux --arch=arm64
+
+      - name: Upload Linux arm64 installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux-installer-arm64
+          path: |
+            installer-tauri/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.AppImage
+            installer-tauri/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.deb
+            installer-tauri/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.rpm
+          if-no-files-found: error
+          retention-days: 7
+
   # ──────────────────────────────────────────────────────────────
   # Job: Publish to GitHub Releases
   # ──────────────────────────────────────────────────────────────
   publish:
-    needs: release
+    needs:
+      - release
+      - release-linux-installer-arm64
     runs-on: ubuntu-latest
     
     steps:
@@ -165,28 +239,29 @@ jobs:
           make_latest: false
           generate_release_notes: true
           body: |
-            ## 🚀 ClawX ${{ github.ref_name }}
+            ## 🚀 ClawMate ${{ github.ref_name }}
             
-            ClawX - Graphical AI Assistant based on OpenClaw
+            ClawMate - Graphical AI Assistant based on OpenClaw
             
             ### 📦 Downloads
             
             Please select the appropriate installer for your operating system and architecture:
             
             #### macOS
-            - **Apple Silicon (M1/M2/M3/M4)**: `ClawX-*-mac-arm64.dmg`
-            - **Intel (x64)**: `ClawX-*-mac-x64.dmg`
+            - **Apple Silicon (M1/M2/M3/M4)**: `ClawMate-*-mac-arm64.dmg`
+            - **Intel (x64)**: `ClawMate-*-mac-x64.dmg`
             
             #### Windows
-            - **Installer (x64)**: `ClawX-*-win-x64.exe`
-            - **Installer (ARM64)**: `ClawX-*-win-arm64.exe`
+            - **Installer (x64)**: `ClawMate-*-win-x64.exe`
+            - **Installer (ARM64)**: `ClawMate-*-win-arm64.exe`
             
             #### Linux
-            - **AppImage (x64)**: `ClawX-*-linux-x86_64.AppImage` (Universal format, recommended)
-            - **AppImage (ARM64)**: `ClawX-*-linux-arm64.AppImage`
-            - **Debian/Ubuntu (x64)**: `ClawX-*-linux-amd64.deb`
-            - **Debian/Ubuntu (ARM64)**: `ClawX-*-linux-arm64.deb`
-            - **RPM (x64)**: `ClawX-*-linux-x86_64.rpm`
+            - **AppImage (x64)**: `ClawMate-*-linux-x86_64.AppImage` (Universal format, recommended)
+            - **AppImage (ARM64)**: `ClawMate-*-linux-arm64.AppImage`
+            - **Debian/Ubuntu (x64)**: `ClawMate-*-linux-amd64.deb`
+            - **Debian/Ubuntu (ARM64)**: `ClawMate-*-linux-arm64.deb`
+            - **RPM (x64)**: `ClawMate-*-linux-x86_64.rpm`
+            - **Offline setup wizard (ARM64)**: `ClawMate Setup_*_aarch64.AppImage` or `ClawMate Setup_*_arm64.deb`
             
             ### 📝 Release Notes
             
@@ -196,7 +271,7 @@ jobs:
             
             - **macOS**: On first launch, you may see "cannot verify developer". Go to System Preferences → Security & Privacy to allow the app to run
             - **Windows**: SmartScreen may block the app. Click "More info" → "Run anyway" to proceed
-            - **Linux AppImage**: First run `chmod +x ClawX-*.AppImage` to add execute permission. On Ubuntu 22.04 you may also need `sudo apt install libfuse2`; on Ubuntu 24.04 use `sudo apt install libfuse2t64`
+            - **Linux AppImage**: First run `chmod +x ClawMate-*.AppImage` to add execute permission. On Ubuntu 22.04 you may also need `sudo apt install libfuse2`; on Ubuntu 24.04 use `sudo apt install libfuse2t64`
             - **Linux .deb (Ubuntu 24.04)**: If installation fails due to missing dependencies, use `sudo apt install libgtk-3-0t64 libnotify4t64 libxss1t64` before installing
             
             ---
@@ -218,7 +293,9 @@ jobs:
   #   releases/vX.Y.Z/ → permanent archive, never deleted
   # ──────────────────────────────────────────────────────────────
   upload-oss:
-    needs: release
+    needs:
+      - release
+      - release-linux-installer-arm64
     runs-on: ubuntu-latest
 
     steps:
@@ -301,19 +378,19 @@ jobs:
               releaseDate: $date,
               downloads: {
                 mac: {
-                  x64: ($base + "/ClawX-" + $version + "-mac-x64.dmg"),
-                  arm64: ($base + "/ClawX-" + $version + "-mac-arm64.dmg")
+                  x64: ($base + "/ClawMate-" + $version + "-mac-x64.dmg"),
+                  arm64: ($base + "/ClawMate-" + $version + "-mac-arm64.dmg")
                 },
                 win: {
-                  x64: ($base + "/ClawX-" + $version + "-win-x64.exe"),
-                  arm64: ($base + "/ClawX-" + $version + "-win-arm64.exe")
+                  x64: ($base + "/ClawMate-" + $version + "-win-x64.exe"),
+                  arm64: ($base + "/ClawMate-" + $version + "-win-arm64.exe")
                 },
                 linux: {
-                  deb_amd64: ($base + "/ClawX-" + $version + "-linux-amd64.deb"),
-                  deb_arm64: ($base + "/ClawX-" + $version + "-linux-arm64.deb"),
-                  appimage_x64: ($base + "/ClawX-" + $version + "-linux-x86_64.AppImage"),
-                  appimage_arm64: ($base + "/ClawX-" + $version + "-linux-arm64.AppImage"),
-                  rpm_x64: ($base + "/ClawX-" + $version + "-linux-x86_64.rpm")
+                  deb_amd64: ($base + "/ClawMate-" + $version + "-linux-amd64.deb"),
+                  deb_arm64: ($base + "/ClawMate-" + $version + "-linux-arm64.deb"),
+                  appimage_x64: ($base + "/ClawMate-" + $version + "-linux-x86_64.AppImage"),
+                  appimage_arm64: ($base + "/ClawMate-" + $version + "-linux-arm64.AppImage"),
+                  rpm_x64: ($base + "/ClawMate-" + $version + "-linux-x86_64.rpm")
                 }
               },
               changelog: $changelog

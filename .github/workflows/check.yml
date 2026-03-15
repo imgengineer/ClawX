@@ -1,4 +1,4 @@
-# ClawX CI Workflow
+# ClawMate CI Workflow
 # Runs on pull requests (main/develop) 
 name: Check and Build
 
@@ -28,6 +28,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install installer dependencies
+        run: pnpm install --dir installer-tauri
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Run linter
         run: pnpm run lint
 
@@ -36,6 +42,12 @@ jobs:
 
       - name: Run tests
         run: pnpm run test
+
+      - name: Build installer frontend
+        run: pnpm --dir installer-tauri build
+
+      - name: Check installer backend
+        run: cargo check --manifest-path installer-tauri/src-tauri/Cargo.toml
 
   build:
     runs-on: windows-latest

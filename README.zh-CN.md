@@ -302,6 +302,7 @@ ClawX 采用 **双进程 + Host API 统一接入架构**。渲染进程只调用
 │   └── types/               # TypeScript 类型定义
 ├── tests/
 │   └── unit/                # Vitest 单元/集成型测试
+├── installer-tauri/         # 离线安装向导（Tauri + React）
 ├── resources/                # 静态资源（图标、图片）
 └── scripts/                  # 构建与工具脚本
 ```
@@ -326,6 +327,8 @@ pnpm package              # 为当前平台打包
 pnpm package:mac          # 为 macOS 打包
 pnpm package:win          # 为 Windows 打包
 pnpm package:linux        # 为 Linux 打包
+pnpm run build:installer -- --os=win --arch=x64   # 构建离线安装向导
+pnpm run build:installer -- --os=linux --arch=arm64  # 构建 Linux arm64 离线安装向导（需在 Linux 主机或 CI 中执行）
 ```
 ### 技术栈
 

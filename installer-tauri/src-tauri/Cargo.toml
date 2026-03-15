@@ -1,0 +1,26 @@
+[package]
+name = "clawmate-installer"
+version = "0.2.3"
+description = "Offline setup wizard for ClawMate"
+authors = ["ClawMate Team"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "clawmate_installer_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zip = "8.2.0"
+tauri-plugin-dialog = "2.6.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+mslnk = "0.1.8"

@@ -16,9 +16,9 @@
             "isbinaryfile": "^5.0.0"
         }
     },
-    "description": "ClawX - Graphical AI Assistant based on OpenClaw",
+    "description": "ClawMate - Graphical AI Assistant based on OpenClaw",
     "main": "dist-electron/main/index.js",
-    "author": "ClawX Team",
+    "author": "ClawMate Team",
     "license": "MIT",
     "private": true,
     "scripts": {
@@ -41,6 +41,7 @@
         "package:mac": "vite build && zx scripts/bundle-openclaw.mjs && zx scripts/bundle-openclaw-plugins.mjs && zx scripts/bundle-preinstalled-skills.mjs && electron-builder --mac",
         "package:win": "vite build && zx scripts/bundle-openclaw.mjs && zx scripts/bundle-openclaw-plugins.mjs && zx scripts/bundle-preinstalled-skills.mjs && electron-builder --win",
         "package:linux": "vite build && zx scripts/bundle-openclaw.mjs && zx scripts/bundle-openclaw-plugins.mjs && zx scripts/bundle-preinstalled-skills.mjs && electron-builder --linux",
+        "build:installer": "zx scripts/build-installer.mjs",
         "release": "pnpm run uv:download && vite build && zx scripts/bundle-openclaw.mjs && zx scripts/bundle-openclaw-plugins.mjs && zx scripts/bundle-preinstalled-skills.mjs && electron-builder --publish always",
         "version:patch": "pnpm version patch",
         "version:minor": "pnpm version minor",
@@ -83,6 +84,7 @@
         "@typescript-eslint/parser": "^8.56.0",
         "@vitejs/plugin-react": "^5.1.4",
         "@wecom/wecom-openclaw-plugin": "^1.0.6",
+        "archiver": "^7.0.1",
         "autoprefixer": "^10.4.24",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",

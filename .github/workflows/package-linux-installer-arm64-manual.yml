@@ -1,0 +1,99 @@
+name: Package Linux Installer arm64 (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build (branch, tag, or SHA). Leave empty for current default ref.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  package-linux-installer-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-arm64-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-arm64-pnpm-store-
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install root dependencies
+        run: pnpm install
+
+      - name: Install installer dependencies
+        run: pnpm install --dir installer-tauri
+
+      - name: Install Linux bundle dependencies for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            rpm
+
+      - name: Download uv binaries for Linux
+        run: pnpm run uv:download:linux
+
+      - name: Build Linux arm64 offline installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run build:installer -- --os=linux --arch=arm64
+
+      - name: Upload Linux arm64 installer AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-installer-arm64-appimage
+          path: installer-tauri/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.AppImage
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Linux arm64 installer Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-installer-arm64-deb
+          path: installer-tauri/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.deb
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Linux arm64 installer RPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-installer-arm64-rpm
+          path: installer-tauri/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.rpm
+          if-no-files-found: warn
+          retention-days: 7
